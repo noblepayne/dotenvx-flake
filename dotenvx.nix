@@ -23,7 +23,7 @@ stdenv.mkDerivation (finalAttrs: {
     hash = "sha256-dQcIU0UjcBMqRw+Xk75HkKWG2b4Uq0YFnHcaF1jtGp8=";
   };
   node_modules = stdenv.mkDerivation {
-    pname = "node-modules";
+    pname = "dotenvx-node_modules";
     inherit (finalAttrs) src version;
     buildInputs = [nodejs_18];
     buildPhase = ''
@@ -36,7 +36,7 @@ stdenv.mkDerivation (finalAttrs: {
     '';
   };
   pkg-fetch-cache = stdenv.mkDerivation {
-    pname = "pkg-fetch-cache";
+    pname = "dotenvx-pkg-fetch-cache";
     inherit (finalAttrs) src version;
     outputHash =
       if system == "x86_64-linux"
