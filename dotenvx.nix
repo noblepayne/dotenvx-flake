@@ -54,9 +54,31 @@ stdenv.mkDerivation (finalAttrs: {
       runHook postBuild
     '';
   };
-  nativeBuildInputs = [autoPatchelfHook];
-  buildInputs = [nodejs_18 stdenv.cc.cc];
-  #export PKG_CACHE_PATH="${finalAttrs.pkg-fetch-cache}/.pkg-cache"
+  patched-pkg-fetch-cache = stdenv.mkDerivation {
+    pname = "dotenvx-patched-pkg-fetch-cache";
+    inherit (finalAttrs) version;
+    src = finalAttrs.pkg-fetch-cache;
+    nativeBuildInputs = [autoPatchelfHook];
+    buildInputs = [stdenv.cc.cc];
+    buildPhase = ''
+      runHook preBuild
+      mkdir -p $out/.pkg-cache
+      cp -rT .pkg-cache $out/.pkg-cache
+      mv $out/.pkg-cache/v3.4/{fetched-v18.5.0-linux-x64,built-v18.5.0-linux-x64}
+      runHook postBuild
+    '';
+  };
+  buildInputs = [nodejs_18];
+  #export PKG_CACHE_PATH=$HOME/.pkg-cache
+  #mkdir -p $PKG_CACHE_PATH
+  # copy downloaded file to our homedir cache
+  #cp -rT ${finalAttrs.patched-pkg-fetch-cache}/.pkg-cache $PKG_CACHE_PATH
+  # chmod -R a+rwx $PKG_CACHE_PATH
+  # patch to support nix/nixos
+  # autoPatchelf $PKG_CACHE_PATH
+  # rename to built to avoid pkg-fetch hash checking
+  #mv $PKG_CACHE_PATH/v3.4/{fetched-v18.5.0-linux-x64,built-v18.5.0-linux-x64}
+
   buildPhase = ''
     runHook preBuild
     export HOME=$(mktemp -d)
@@ -64,15 +86,7 @@ stdenv.mkDerivation (finalAttrs: {
     # restore node_modules
     cp -r ${finalAttrs.node_modules}/node_modules .
     # setup pkg-fetch cache
-    export PKG_CACHE_PATH=$HOME/.pkg-cache
-    mkdir -p $PKG_CACHE_PATH
-    # copy downloaded file to our homedir cache
-    cp -rT ${finalAttrs.pkg-fetch-cache}/.pkg-cache $PKG_CACHE_PATH
-    chmod -R a+rwx $PKG_CACHE_PATH
-    # patch to support nix/nixos
-    autoPatchelf $PKG_CACHE_PATH
-    # rename to built to avoid pkg-fetch hash checking
-    mv $PKG_CACHE_PATH/v3.4/{fetched-v18.5.0-linux-x64,built-v18.5.0-linux-x64}
+    export PKG_CACHE_PATH="${finalAttrs.patched-pkg-fetch-cache}/.pkg-cache"
     # run pkg to build binary
     ./node_modules/.bin/pkg . --no-bytecode --pubic-packages "*" --public --target node18-linux-x64 --output $out/bin/dotenvx
     runHook postBuild
