@@ -64,6 +64,7 @@ stdenv.mkDerivation (finalAttrs: {
       runHook preBuild
       mkdir -p $out/.pkg-cache
       cp -rT .pkg-cache $out/.pkg-cache
+      # pretend to be "built" to avoid pkg-fetch hash checking binary after patching
       mv $out/.pkg-cache/v3.4/{fetched-v18.5.0-linux-x64,built-v18.5.0-linux-x64}
       runHook postBuild
     '';
