@@ -1,21 +1,35 @@
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
-  outputs = {nixpkgs, ...}: let
+  outputs = {
+    self,
+    nixpkgs,
+    ...
+  }: let
     supportedSystems = ["x86_64-linux"]; # TODO: other systems
-    systems = nixpkgs.lib.getAttrs supportedSystems nixpkgs.legacyPackages;
-    forEachSystem = fn: nixpkgs.lib.mapAttrs fn systems;
+    forAllSystems = fn:
+      nixpkgs.lib.mapAttrs
+      (system: pkgs: fn pkgs)
+      (nixpkgs.lib.getAttrs supportedSystems nixpkgs.legacyPackages);
   in {
-    formatter = forEachSystem (system: pkgs: pkgs.alejandra);
-    devShells = forEachSystem (system: pkgs: {
+    formatter = forAllSystems (pkgs: pkgs.alejandra);
+    overlays.default = final: prev: {
+      dotenvx = prev.callPackage ./dotenvx.nix {};
+    };
+    packages = forAllSystems (pkgs: let
+      overlayPkgs = self.overlays.default pkgs pkgs;
+    in {
+      dotenvx = overlayPkgs.dotenvx;
+      default = overlayPkgs.dotenvx;
+    });
+    devShells = forAllSystems (pkgs: {
       default = pkgs.mkShell {
         name = "devshell";
-        packages = [pkgs.neovim pkgs.nodejs_18];
+        packages = [
+          self.packages.${pkgs.system}.dotenvx
+          pkgs.neovim
+          pkgs.nodejs_18
+        ];
       };
     });
-    packages = forEachSystem (
-      system: pkgs: {
-        default = pkgs.callPackage ./dotenvx.nix {};
-      }
-    );
   };
 }
