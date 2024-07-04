@@ -9,8 +9,13 @@
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
+  # essential attrs
   pname = "dotenvx";
   version = "v1.5.0";
+  # some things that vary by system and may need to be overridden
+  pkgFetchOutputHash = "sha256-lUjoy0njP2zmK2qATlk7SjgJW4zililqwf0KkqoWEvA=";
+  nodeTarget = "node18-linux-x64";
+  # fetch src and deps
   src = fetchFromGitHub {
     owner = "dotenvx";
     repo = "dotenvx";
@@ -22,6 +27,7 @@ stdenv.mkDerivation (finalAttrs: {
     pname = "dotenvx-deps";
     hash = "sha256-dQcIU0UjcBMqRw+Xk75HkKWG2b4Uq0YFnHcaF1jtGp8=";
   };
+  # setup node_modules folder from fetched deps
   node_modules = stdenv.mkDerivation {
     pname = "dotenvx-node_modules";
     inherit (finalAttrs) src version;
@@ -35,10 +41,11 @@ stdenv.mkDerivation (finalAttrs: {
       runHook postBuild
     '';
   };
+  # run `pkg-fetch` to download custom node binary
   pkg-fetch-cache = stdenv.mkDerivation {
     pname = "dotenvx-pkg-fetch-cache";
     inherit (finalAttrs) src version;
-    outputHash = "sha256-lUjoy0njP2zmK2qATlk7SjgJW4zililqwf0KkqoWEvA=";
+    outputHash = finalAttrs.pkgFetchOutputHash;
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
     buildInputs = [cacert];
@@ -51,6 +58,7 @@ stdenv.mkDerivation (finalAttrs: {
       runHook postBuild
     '';
   };
+  # patch customer node binary to run on nix
   patched-pkg-fetch-cache = stdenv.mkDerivation {
     pname = "dotenvx-patched-pkg-fetch-cache";
     inherit (finalAttrs) version;
@@ -69,6 +77,7 @@ stdenv.mkDerivation (finalAttrs: {
       runHook postBuild
     '';
   };
+  # build dotenvx binary using `pkg`
   buildPhase = ''
     runHook preBuild
     export HOME=$(mktemp -d)
@@ -78,7 +87,7 @@ stdenv.mkDerivation (finalAttrs: {
     # setup pkg-fetch cache
     export PKG_CACHE_PATH="${finalAttrs.patched-pkg-fetch-cache}"
     # run pkg to build binary
-    ./node_modules/.bin/pkg . --no-bytecode --pubic-packages "*" --public --target node18-linux-x64 --output $out/bin/dotenvx
+    ./node_modules/.bin/pkg . --no-bytecode --pubic-packages "*" --public --target ${finalAttrs.nodeTarget} --output $out/bin/dotenvx
     runHook postBuild
   '';
   # fixups seem to break the final binary. Instead we patch the node fetched by
