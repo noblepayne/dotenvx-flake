@@ -23,8 +23,7 @@ stdenv.mkDerivation (finalAttrs: {
     hash = "sha256-W2JnWRHwtEF/dw+oMgyZFQXBlw2QVNTYZnwQMAS0T8w=";
   };
   npmDeps = fetchNpmDeps {
-    inherit (finalAttrs) src version;
-    pname = "dotenvx-npmDeps";
+    inherit (finalAttrs) src;
     hash = "sha256-dQcIU0UjcBMqRw+Xk75HkKWG2b4Uq0YFnHcaF1jtGp8=";
   };
   # setup node_modules folder from fetched npmDeps
