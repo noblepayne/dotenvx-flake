@@ -30,11 +30,10 @@ stdenv.mkDerivation (finalAttrs: {
   node_modules = stdenv.mkDerivation {
     pname = "dotenvx-node_modules";
     inherit (finalAttrs) src version;
-    buildInputs = [nodejs_18];
+    nativeBuildInputs = [nodejs_18];
     buildPhase = ''
       runHook preBuild
       npm_config_cache=${finalAttrs.npmDeps} npm install
-      patchShebangs node_modules
       mkdir $out
       mv node_modules $out
       runHook postBuild
@@ -47,12 +46,12 @@ stdenv.mkDerivation (finalAttrs: {
     outputHash = finalAttrs.pkgFetchOutputHash;
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
-    buildInputs = [cacert];
+    nativeBuildInputs = [cacert nodejs_18];
     buildPhase = ''
       runHook preBuild
       mkdir $out
       export PKG_CACHE_PATH="$out"
-      ${finalAttrs.node_modules}/node_modules/.bin/pkg-fetch
+      node ${finalAttrs.node_modules}/node_modules/.bin/pkg-fetch
       runHook postBuild
     '';
   };
@@ -74,12 +73,13 @@ stdenv.mkDerivation (finalAttrs: {
     '';
   };
   # build dotenvx binary using `pkg`
+  nativeBuildInputs = [nodejs_18];
   buildPhase = ''
     runHook preBuild
     cp -r ${finalAttrs.node_modules}/node_modules .               # restore node_modules, needed for pkg build
     export PKG_CACHE_PATH="${finalAttrs.patched-pkg-fetch-cache}" # setup pkg-fetch cache
     mkdir -p $out/bin                                             # make output dirs and run pkg to build binary
-    ./node_modules/.bin/pkg . \
+    node ./node_modules/.bin/pkg . \
       --no-bytecode \
       --pubic-packages "*" \
       --public \
