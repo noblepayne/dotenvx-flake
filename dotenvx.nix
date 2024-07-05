@@ -15,26 +15,26 @@ stdenv.mkDerivation (finalAttrs: {
   # some things that vary by system and may need to be overridden
   pkgFetchOutputHash = "sha256-lUjoy0njP2zmK2qATlk7SjgJW4zililqwf0KkqoWEvA=";
   nodeTarget = "node18-linux-x64";
-  # fetch src and deps
+  # fetch src and npmDeps
   src = fetchFromGitHub {
     owner = "dotenvx";
     repo = "dotenvx";
     rev = finalAttrs.version;
     hash = "sha256-W2JnWRHwtEF/dw+oMgyZFQXBlw2QVNTYZnwQMAS0T8w=";
   };
-  deps = fetchNpmDeps {
+  npmDeps = fetchNpmDeps {
     inherit (finalAttrs) src version;
-    pname = "dotenvx-deps";
+    pname = "dotenvx-npmDeps";
     hash = "sha256-dQcIU0UjcBMqRw+Xk75HkKWG2b4Uq0YFnHcaF1jtGp8=";
   };
-  # setup node_modules folder from fetched deps
+  # setup node_modules folder from fetched npmDeps
   node_modules = stdenv.mkDerivation {
     pname = "dotenvx-node_modules";
     inherit (finalAttrs) src version;
     buildInputs = [nodejs_18];
     buildPhase = ''
       runHook preBuild
-      npm_config_cache=${finalAttrs.deps} npm install
+      npm_config_cache=${finalAttrs.npmDeps} npm install
       patchShebangs node_modules
       mkdir $out
       mv node_modules $out

@@ -5,8 +5,11 @@
     nixpkgs,
     ...
   }: let
-    supportedSystems = ["x86_64-linux"]; # TODO: other systems
-    # compute each supportedSystems pkgs once.
+    # TODO: other systems?
+    supportedSystems = ["x86_64-linux"];
+    # Goal is to compute each supportedSystems' pkgs just once.
+    # If not using any overlays:
+    #  pkgsBySystem = nixpkgs.lib.getAttrs supportedSystems nixpkgs.legacyPackages
     pkgsBySystem = nixpkgs.lib.genAttrs supportedSystems (
       # If using a more sophisticated overlay:
       #  system: import nixpkgs {inherit system; overlays=[self.overlays.default];}
