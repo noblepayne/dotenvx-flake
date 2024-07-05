@@ -6,29 +6,33 @@
     ...
   }: let
     supportedSystems = ["x86_64-linux"]; # TODO: other systems
-    forAllSystems = fn:
-      nixpkgs.lib.mapAttrs
-      (system: pkgs: fn pkgs)
-      (nixpkgs.lib.getAttrs supportedSystems nixpkgs.legacyPackages);
+    # compute each supportedSystems pkgs once.
+    pkgsBySystem = nixpkgs.lib.genAttrs supportedSystems (
+      # If using a more sophisticated overlay:
+      #  system: import nixpkgs {inherit system; overlays=[self.overlays.default];}
+      system: let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+        # "extend" nixpkgs w/o recomputing nixpkgs
+        pkgs // (self.overlays.default pkgs pkgs)
+    );
+    # forAllPkgs creates an attrset keyed on `system` with values
+    # given by calling provided `fn` with that system's `pkgs` as an arg.
+    forAllPkgs = fn:
+      nixpkgs.lib.mapAttrs (system: pkgs: (fn pkgs)) pkgsBySystem;
   in {
-    formatter = forAllSystems (pkgs: pkgs.alejandra);
     overlays.default = final: prev: {
       dotenvx = prev.callPackage ./dotenvx.nix {};
     };
-    packages = forAllSystems (pkgs: let
-      overlayPkgs = self.overlays.default pkgs pkgs;
-    in {
-      dotenvx = overlayPkgs.dotenvx;
-      default = overlayPkgs.dotenvx;
+    formatter = forAllPkgs (pkgs: pkgs.alejandra);
+    packages = forAllPkgs (pkgs: {
+      dotenvx = pkgs.dotenvx;
+      default = pkgs.dotenvx;
     });
-    devShells = forAllSystems (pkgs: {
+    devShells = forAllPkgs (pkgs: {
       default = pkgs.mkShell {
         name = "devshell";
-        packages = [
-          self.packages.${pkgs.system}.dotenvx
-          pkgs.neovim
-          pkgs.nodejs_18
-        ];
+        packages = [pkgs.dotenvx pkgs.neovim pkgs.nodejs_18];
       };
     });
   };
