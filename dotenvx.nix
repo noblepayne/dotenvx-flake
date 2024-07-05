@@ -51,10 +51,9 @@ stdenv.mkDerivation (finalAttrs: {
     buildInputs = [cacert];
     buildPhase = ''
       runHook preBuild
-      export HOME=$(mktemp -d)
-      ${finalAttrs.node_modules}/node_modules/.bin/pkg-fetch
       mkdir $out
-      cp -rT $HOME/.pkg-cache $out
+      export PKG_CACHE_PATH="$out"
+      ${finalAttrs.node_modules}/node_modules/.bin/pkg-fetch
       runHook postBuild
     '';
   };
@@ -68,26 +67,25 @@ stdenv.mkDerivation (finalAttrs: {
     buildPhase = ''
       runHook preBuild
       mkdir -p $out
-      fetchedBin=$(find . -iname 'fetched*')
-      builtBin=$(echo $fetchedBin | sed 's/fetched/built/')
-      # pretend to be "built" to avoid pkg-fetch hash checking binary after patching
-      mv $fetchedBin $builtBin
-      # copy to store, keeping expected path
-      cp -rT . $out
+      fetchedBin=$(find . -iname 'fetched*')                # This might be something like `./v3.4/fetched-v18.5.0-linux-x64`
+      builtBin=$(echo $fetchedBin | sed 's/fetched/built/') # but we want `./v3.4/built-v18.5.0-linux-x64`
+      mv $fetchedBin $builtBin                              # pretend to be "built" to avoid pkg-fetch hash checking binary after patching
+      cp -rT . $out                                         # copy to store, keeping expected dir structure
       runHook postBuild
     '';
   };
   # build dotenvx binary using `pkg`
   buildPhase = ''
     runHook preBuild
-    export HOME=$(mktemp -d)
-    mkdir -p $out/bin
-    # restore node_modules
-    cp -r ${finalAttrs.node_modules}/node_modules .
-    # setup pkg-fetch cache
-    export PKG_CACHE_PATH="${finalAttrs.patched-pkg-fetch-cache}"
-    # run pkg to build binary
-    ./node_modules/.bin/pkg . --no-bytecode --pubic-packages "*" --public --target ${finalAttrs.nodeTarget} --output $out/bin/dotenvx
+    cp -r ${finalAttrs.node_modules}/node_modules .               # restore node_modules, needed for pkg build
+    export PKG_CACHE_PATH="${finalAttrs.patched-pkg-fetch-cache}" # setup pkg-fetch cache
+    mkdir -p $out/bin                                             # make output dirs and run pkg to build binary
+    ./node_modules/.bin/pkg . \
+      --no-bytecode \
+      --pubic-packages "*" \
+      --public \
+      --target ${finalAttrs.nodeTarget} \
+      --output $out/bin/${finalAttrs.pname}
     runHook postBuild
   '';
   # fixups seem to break the final binary. Instead we patch the node fetched by
