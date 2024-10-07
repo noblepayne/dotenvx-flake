@@ -11,7 +11,7 @@
 stdenv.mkDerivation (finalAttrs: {
   # essential attrs
   pname = "dotenvx";
-  version = "v1.6.4";
+  version = "v1.15.0";
   # some things that vary by system and may need to be overridden
   pkgFetchOutputHash = "sha256-lUjoy0njP2zmK2qATlk7SjgJW4zililqwf0KkqoWEvA=";
   nodeTarget = "node18-linux-x64";
@@ -20,11 +20,11 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "dotenvx";
     repo = "dotenvx";
     rev = finalAttrs.version;
-    hash = "sha256-A7RojzdBwJ06JHBAoxVmOi9cAxoeGTwAK08jmST7pls=";
+    hash = "sha256-WDICrM1Ry3IUpt7cA8Qz+UkEQ81H+DnfDwvbXCTncQ8=";
   };
   npmDeps = fetchNpmDeps {
     inherit (finalAttrs) src;
-    hash = "sha256-KToJAeWsCeJ2GO/k5UuOa/7oOYjNsS0kMt0o+yDyppM=";
+    hash = "sha256-jgebn59pgNiO5/8A/GLT2pLFrC9C7khgLeDQvyIkikc=";
   };
   # setup node_modules folder from fetched npmDeps
   node_modules = stdenv.mkDerivation {
